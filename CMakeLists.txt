@@ -333,7 +333,7 @@ include_directories(external/rapidjson/include external/easylogging++ src contri
 
 # Find the libipfs library for each platform
 if(UNIX AND NOT APPLE)
-    find_library(LIBIPFS NAMES ipfs-linux PATHS "${CMAKE_SOURCE_DIR}/external/libipfs" REQUIRED)
+    find_library(LIBIPFS NAMES ipfs-linux PATHS "${CMAKE_CURRENT_SOURCE_DIR}/external/libipfs" REQUIRED)
 elseif(MACOS OR APPLE)
     find_library(LIBIPFS NAMES ipfs-macos PATHS "${CMAKE_SOURCE_DIR}/external/libipfs" REQUIRED)
 else()

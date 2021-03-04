@@ -48,6 +48,8 @@ class AddressBookImpl;
 class SubaddressImpl;
 class CoinsImpl;
 class SubaddressAccountImpl;
+class PendingTransactionInfoImpl;
+class TransactionConstructionInfoImpl;
 struct Wallet2CallbackImpl;
 
 class WalletImpl : public Wallet
@@ -94,9 +96,11 @@ public:
     std::string errorString() const override;
     void statusWithErrorString(int& status, std::string& errorString) const override;
     bool setPassword(const std::string &password) override;
+    std::string getPassword() const override;
     bool setDevicePin(const std::string &password) override;
     bool setDevicePassphrase(const std::string &password) override;
     std::string address(uint32_t accountIndex = 0, uint32_t addressIndex = 0) const override;
+    bool subaddressIndex(std::string address, std::pair<uint32_t, uint32_t> &index) const override;
     std::string integratedAddress(const std::string &payment_id) const override;
     std::string secretViewKey() const override;
     std::string publicViewKey() const override;
@@ -172,8 +176,33 @@ public:
     virtual PendingTransaction * createSweepUnmixableTransaction() override;
     bool submitTransaction(const std::string &fileName) override;
     virtual UnsignedTransaction * loadUnsignedTx(const std::string &unsigned_filename) override;
-    bool exportKeyImages(const std::string &filename) override;
+    virtual UnsignedTransaction * loadUnsignedTxFromStr(const std::string &unsigned_tx) override;
+    virtual UnsignedTransaction * loadUnsignedTxFromBase64Str(const std::string &unsigned_tx) override;
+    virtual PendingTransaction * loadSignedTx(const std::string &signed_filename) override;
+    bool exportKeyImages(const std::string &filename, bool all = false) override;
     bool importKeyImages(const std::string &filename) override;
+
+    bool exportOutputs(const std::string &filename, bool all = false) override;
+    bool importOutputs(const std::string &filename) override;
+    bool importTransaction(const std::string &txid, std::vector<uint64_t> &o_indices, uint64_t height, uint8_t block_version, uint64_t ts, bool miner_tx, bool pool, bool double_spend_seen) override;
+
+    virtual std::string printBlockchain() override;
+    virtual std::string printTransfers() override;
+    virtual std::string printPayments() override;
+    virtual std::string printUnconfirmedPayments() override;
+    virtual std::string printConfirmedTransferDetails() override;
+    virtual std::string printUnconfirmedTransferDetails() override;
+    virtual std::string printPubKeys() override;
+    virtual std::string printTxNotes() override;
+    virtual std::string printSubaddresses() override;
+    virtual std::string printSubaddressLabels() override;
+    virtual std::string printAdditionalTxKeys() override;
+    virtual std::string printAttributes() override;
+    virtual std::string printKeyImages() override;
+    virtual std::string printAccountTags() override;
+    virtual std::string printTxKeys() override;
+    virtual std::string printAddressBook() override;
+    virtual std::string printScannedPoolTxs() override;
 
     virtual void disposeTransaction(PendingTransaction * t) override;
     virtual uint64_t estimateTransactionFee(const std::vector<std::pair<std::string, uint64_t>> &destinations,
@@ -224,6 +253,8 @@ public:
     virtual bool isKeysFileLocked() override;
     virtual uint64_t coldKeyImageSync(uint64_t &spent, uint64_t &unspent) override;
     virtual void deviceShowAddress(uint32_t accountIndex, uint32_t addressIndex, const std::string &paymentId) override;
+    virtual uint64_t getBytesReceived() override;
+    virtual uint64_t getBytesSent() override;
 
 private:
     void clearStatus() const;
@@ -247,6 +278,8 @@ private:
     friend class SubaddressImpl;
     friend class CoinsImpl;
     friend class SubaddressAccountImpl;
+    friend class PendingTransactionInfoImpl;
+    friend class TransactionConstructionInfoImpl;
 
     std::unique_ptr<tools::wallet2> m_wallet;
     mutable boost::mutex m_statusMutex;
