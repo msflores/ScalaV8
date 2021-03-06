@@ -34,14 +34,6 @@
 #include "misc_log_ex.h"
 #include "rapidjson/document.h"
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-    #include "libipfs/include/libipfs-windows.h"
-#elif __APPLE__
-    #include "libipfs/include/libipfs-macos.h"
-#else
-    #include "libipfs/include/libipfs-linux.h"
-#endif
-
 #undef SCALA_DEFAULT_LOG_CATEGORY
 #define SCALA_DEFAULT_LOG_CATEGORY "daemon"
 
@@ -72,27 +64,6 @@ public:
   {
     //initialize core here
     MGINFO("Initializing core...");
-
-    //initialize IPFS here
-	  MGINFO("Initializing IPFS...");
-    
-    const char* IPFSstartMessage = IPFSStartNode((char*)"./");
-
-	  Document startMessage;
-	  startMessage.Parse(IPFSstartMessage);
-
-    std::string parsedMessage = startMessage["Message"].GetString();
-
-    if (parsedMessage.find("started on port") != std::string::npos) {
-      MGINFO("Initialized new IPFS daemon...");
-    }
-    else if(parsedMessage.find("busy") != std::string::npos){
-      MGINFO("Reusing existing running IPFS daemon...");
-    }
-    else{
-      MGINFO("Could not initialize IPFS...");
-      m_core.graceful_exit();
-    }
 
     #if defined(PER_BLOCK_CHECKPOINT)
         const cryptonote::GetCheckpointsCallback& get_checkpoints = blocks::GetCheckpointsData;
@@ -128,18 +99,6 @@ public:
     try {
       m_core.deinit();
       m_core.set_cryptonote_protocol(nullptr);
-
-    MGINFO("Deinitializing IPFS...");
-    
-    const char* IPFSstopMessage = IPFSStopNode();
-    Document stopMessage;
-	  stopMessage.Parse(IPFSstopMessage);
-    std::string parsedMessage = stopMessage["Message"].GetString();
-
-      if (parsedMessage.find("IPFS node stopped") != std::string::npos) {
-        MGINFO("IPFS daemon stopped...");
-      }
-      
      } catch (...) {
       MERROR("Failed to deinitialize core...");
     }

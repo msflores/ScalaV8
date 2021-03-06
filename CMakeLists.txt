@@ -329,17 +329,7 @@ if(STATIC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DZMQ_STATIC")
 endif()
 
-include_directories(external/rapidjson/include external/easylogging++ src contrib/epee/include external external/supercop/include external/include/libipfs)
-
-# Find the libipfs library for each platform
-if(UNIX AND NOT APPLE)
-    find_library(LIBIPFS NAMES ipfs-linux PATHS "${CMAKE_CURRENT_SOURCE_DIR}/external/libipfs" REQUIRED)
-elseif(MACOS OR APPLE)
-    find_library(LIBIPFS NAMES ipfs-macos PATHS "${CMAKE_SOURCE_DIR}/external/libipfs" REQUIRED)
-else()
-    # TODO - find library fails on windows
-    set(LIBIPFS "${CMAKE_SOURCE_DIR}/external/libipfs/libipfs-windows.a")
-endif()
+include_directories(external/rapidjson/include external/easylogging++ src contrib/epee/include external external/supercop/include)
 
 if(APPLE)
   include_directories(SYSTEM /usr/include/malloc)

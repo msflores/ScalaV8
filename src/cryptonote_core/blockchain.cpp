@@ -4614,12 +4614,7 @@ bool Blockchain::update_checkpoints(const std::string& file_path, bool check_dns
   {
       return false;
   }
-
-  if (!m_checkpoints.load_checkpoints_from_ipfs())
-  {
-      return false;
-  }
-
+  
   // if we're checking both dns and json, load checkpoints from dns.
   // if we're not hard-enforcing dns checkpoints, handle accordingly
   if (m_enforce_dns_checkpoints && check_dns && !m_offline)
