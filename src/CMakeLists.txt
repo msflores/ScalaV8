@@ -98,6 +98,10 @@ function (scala_add_library_with_deps)
   set_property(TARGET "${SCALA_ADD_LIBRARY_NAME}" PROPERTY FOLDER "libs")
   target_compile_definitions(${objlib}
     PRIVATE $<TARGET_PROPERTY:${SCALA_ADD_LIBRARY_NAME},INTERFACE_COMPILE_DEFINITIONS>)
+
+  if (BUILD_GUI_DEPS)
+    target_compile_definitions(${objlib} PRIVATE BUILD_GUI_DEPS=1)
+  endif()
 endfunction ()
 
 include(Version)

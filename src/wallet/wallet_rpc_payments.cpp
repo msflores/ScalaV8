@@ -101,92 +101,94 @@ bool wallet2::make_rpc_payment(uint32_t nonce, uint32_t cookie, uint64_t &credit
   return true;
 }
 //----------------------------------------------------------------------------------------------------
-bool wallet2::search_for_rpc_payment(uint64_t credits_target, const std::function<bool(uint64_t, uint64_t)> &startfunc, const std::function<bool(unsigned)> &contfunc, const std::function<bool(uint64_t)> &foundfunc, const std::function<void(const std::string&)> &errorfunc)
-{
-  bool need_payment = false;
-  bool payment_required;
-  uint64_t credits, diff, credits_per_hash_found, height, seed_height;
-  uint32_t cookie;
-  unsigned int n_hashes = 0;
-  cryptonote::blobdata hashing_blob;
-  crypto::hash seed_hash, next_seed_hash;
-  try
+#ifndef BUILD_GUI_DEPS
+  bool wallet2::search_for_rpc_payment(uint64_t credits_target, const std::function<bool(uint64_t, uint64_t)> &startfunc, const std::function<bool(unsigned)> &contfunc, const std::function<bool(uint64_t)> &foundfunc, const std::function<void(const std::string&)> &errorfunc)
   {
-    need_payment = get_rpc_payment_info(false, payment_required, credits, diff, credits_per_hash_found, hashing_blob, height, seed_height, seed_hash, next_seed_hash, cookie) && payment_required && credits < credits_target;
-    if (!need_payment)
-      return true;
-    if (!startfunc(diff, credits_per_hash_found))
-      return true;
-  }
-  catch (const std::exception &e) { return false; }
-
-  static std::atomic<uint32_t> nonce(0);
-  while (contfunc(n_hashes))
-  {
+    bool need_payment = false;
+    bool payment_required;
+    uint64_t credits, diff, credits_per_hash_found, height, seed_height;
+    uint32_t cookie;
+    unsigned int n_hashes = 0;
+    cryptonote::blobdata hashing_blob;
+    crypto::hash seed_hash, next_seed_hash;
     try
     {
-      need_payment = get_rpc_payment_info(true, payment_required, credits, diff, credits_per_hash_found, hashing_blob, height, seed_height, seed_hash, next_seed_hash, cookie) && payment_required && credits < credits_target;
+      need_payment = get_rpc_payment_info(false, payment_required, credits, diff, credits_per_hash_found, hashing_blob, height, seed_height, seed_hash, next_seed_hash, cookie) && payment_required && credits < credits_target;
       if (!need_payment)
+        return true;
+      if (!startfunc(diff, credits_per_hash_found))
         return true;
     }
     catch (const std::exception &e) { return false; }
-    if (hashing_blob.empty())
-    {
-      MERROR("Bad hashing blob from daemon");
-      if (errorfunc)
-        errorfunc("Bad hashing blob from daemon, trying again");
-      epee::misc_utils::sleep_no_w(1000);
-      continue;
-    }
 
-    crypto::hash hash;
-    const uint32_t local_nonce = nonce++; // wrapping's OK
-    *(uint32_t*)(hashing_blob.data() + 39) = SWAP32LE(local_nonce);
-    const uint8_t major_version = hashing_blob[0];
-    if (major_version >= RX_BLOCK_VERSION)
+    static std::atomic<uint32_t> nonce(0);
+    while (contfunc(n_hashes))
     {
-      const int miners = 1;
-      crypto::rx_slow_hash(height, seed_height, seed_hash.data, hashing_blob.data(), hashing_blob.size(), hash.data, miners, 0);
-    }
-    else
-    {
-      int cn_variant = hashing_blob[0] >= 7 ? hashing_blob[0] - 6 : 0;
-      crypto::cn_slow_hash(hashing_blob.data(), hashing_blob.size(), hash, cn_variant, height);
-    }
-    ++n_hashes;
-    if (cryptonote::check_hash(hash, diff))
-    {
-      uint64_t credits, balance;
       try
       {
-        make_rpc_payment(local_nonce, cookie, credits, balance);
-        if (credits != credits_per_hash_found)
+        need_payment = get_rpc_payment_info(true, payment_required, credits, diff, credits_per_hash_found, hashing_blob, height, seed_height, seed_hash, next_seed_hash, cookie) && payment_required && credits < credits_target;
+        if (!need_payment)
+          return true;
+      }
+      catch (const std::exception &e) { return false; }
+      if (hashing_blob.empty())
+      {
+        MERROR("Bad hashing blob from daemon");
+        if (errorfunc)
+          errorfunc("Bad hashing blob from daemon, trying again");
+        epee::misc_utils::sleep_no_w(1000);
+        continue;
+      }
+
+      crypto::hash hash;
+      const uint32_t local_nonce = nonce++; // wrapping's OK
+      *(uint32_t*)(hashing_blob.data() + 39) = SWAP32LE(local_nonce);
+      const uint8_t major_version = hashing_blob[0];
+      if (major_version >= RX_BLOCK_VERSION)
+      {
+        const int miners = 1;
+        crypto::rx_slow_hash(height, seed_height, seed_hash.data, hashing_blob.data(), hashing_blob.size(), hash.data, miners, 0);
+      }
+      else
+      {
+        int cn_variant = hashing_blob[0] >= 7 ? hashing_blob[0] - 6 : 0;
+        crypto::cn_slow_hash(hashing_blob.data(), hashing_blob.size(), hash, cn_variant, height);
+      }
+      ++n_hashes;
+      if (cryptonote::check_hash(hash, diff))
+      {
+        uint64_t credits, balance;
+        try
         {
-          MERROR("Found nonce, but daemon did not credit us with the expected amount");
-          if (errorfunc)
-            errorfunc("Found nonce, but daemon did not credit us with the expected amount");
-          return false;
+          make_rpc_payment(local_nonce, cookie, credits, balance);
+          if (credits != credits_per_hash_found)
+          {
+            MERROR("Found nonce, but daemon did not credit us with the expected amount");
+            if (errorfunc)
+              errorfunc("Found nonce, but daemon did not credit us with the expected amount");
+            return false;
+          }
+          MDEBUG("Found nonce " << local_nonce << " at diff " << diff << ", gets us " << credits_per_hash_found << ", now " << balance << " credits");
+          if (!foundfunc(credits))
+            break;
         }
-        MDEBUG("Found nonce " << local_nonce << " at diff " << diff << ", gets us " << credits_per_hash_found << ", now " << balance << " credits");
-        if (!foundfunc(credits))
-          break;
-      }
-      catch (const tools::error::wallet_coded_rpc_error &e)
-      {
-        MWARNING("Found a local_nonce at diff " << diff << ", but failed to send it to the daemon");
-        if (errorfunc)
-          errorfunc("Found nonce, but daemon errored out with error " + std::to_string(e.code()) + ": " + e.status() + ", continuing");
-      }
-      catch (const std::exception &e)
-      {
-        MWARNING("Found a local_nonce at diff " << diff << ", but failed to send it to the daemon");
-        if (errorfunc)
-          errorfunc("Found nonce, but daemon errored out with: '" + std::string(e.what()) + "', continuing");
+        catch (const tools::error::wallet_coded_rpc_error &e)
+        {
+          MWARNING("Found a local_nonce at diff " << diff << ", but failed to send it to the daemon");
+          if (errorfunc)
+            errorfunc("Found nonce, but daemon errored out with error " + std::to_string(e.code()) + ": " + e.status() + ", continuing");
+        }
+        catch (const std::exception &e)
+        {
+          MWARNING("Found a local_nonce at diff " << diff << ", but failed to send it to the daemon");
+          if (errorfunc)
+            errorfunc("Found nonce, but daemon errored out with: '" + std::string(e.what()) + "', continuing");
+        }
       }
     }
+    return true;
   }
-  return true;
-}
+#endif
 //----------------------------------------------------------------------------------------------------
 void wallet2::check_rpc_cost(const char *call, uint64_t post_call_credits, uint64_t pre_call_credits, double expected_cost)
 {
