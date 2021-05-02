@@ -206,11 +206,11 @@ namespace config
   uint64_t const CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX = 0x9b;
   uint64_t const CRYPTONOTE_PUBLIC_INTEGRATED_ADDRESS_BASE58_PREFIX = 0x6599;
   uint64_t const CRYPTONOTE_PUBLIC_SUBADDRESS_BASE58_PREFIX = 0x5c1a;
-  uint16_t const P2P_DEFAULT_PORT = 11811;
-  uint16_t const RPC_DEFAULT_PORT = 11812;
-  uint16_t const ZMQ_RPC_DEFAULT_PORT = 11813;
+  uint16_t const P2P_DEFAULT_PORT = 16811;
+  uint16_t const RPC_DEFAULT_PORT = 16812;
+  uint16_t const ZMQ_RPC_DEFAULT_PORT = 16813;
   boost::uuids::uuid const NETWORK_ID = { {
-      0xFB ,0x41, 0x71, 0x82 , 0x16, 0xFB , 0x41, 0x61, 0xFB, 0x31, 0x71, 0x82, 0x16, 0x41, 0xFB, 0x82
+      0x13 ,0x13, 0x66, 0x66 , 0x16, 0xFB , 0x41, 0x61, 0xFB, 0x31, 0x71, 0x82, 0x16, 0x41, 0x13, 0x13
     } }; // Bender's nightmare
 
   std::string const GENESIS_TX =
